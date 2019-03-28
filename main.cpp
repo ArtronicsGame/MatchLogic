@@ -1,8 +1,6 @@
 #include <bits/stdc++.h>
 #include <thread>
 #include <Box2D.h>
-#include "Utils/AtomicQueue.h"
-#include "ObjectData.h"
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,6 +11,9 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <nlohmann/json.hpp>
+#include "ObjectData.h"
+#include "Utils/AtomicQueue.h"
+#include "Utils/MapReader.h"
 
 using namespace std;
 using namespace chrono;
@@ -41,61 +42,6 @@ void sendInitialState(){
 		message["_info"]["Angle"] = to_string(it->GetAngle());
 		cout << message << endl;
 		it = it->GetNext();
-	}
-}
-
-void init(){
-	b2Vec2 gravity(0.0f, -40.0f);
-	_world = new b2World(gravity);
-
-	for(int i = 0; i < 3; i++){
-		b2BodyDef groundDef;
-		if(i == 0){
-			groundDef.position.Set(-8.0, 8.0);
-			groundDef.angle = -0.349;
-			groundDef.userData = new ObjectData("Ground1", "Ground");
-		}else if (i == 1){
-			groundDef.position.Set(11.0, -3.4);
-			groundDef.angle = 0.2617;
-			groundDef.userData = new ObjectData("Ground2", "Ground");
-		}else{
-			groundDef.position.Set(-10.0, -10.0);
-			groundDef.angle = 0;
-			groundDef.userData = new ObjectData("Ground3", "Ground");
-		}
-
-		b2Body* ground = _world->CreateBody(&groundDef);
-		b2PolygonShape groundBox;
-		groundBox.SetAsBox(8.0, 2.0);
-
-		ground->CreateFixture(&groundBox, 0.0);
-	}
-
-	for(int i = 0; i < 2; i++){
-		b2BodyDef boxDef;
-		if(i == 0){
-			boxDef.position.Set(-5.0, 16.0);
-			boxDef.angle = 0.523;
-			boxDef.type = b2_dynamicBody;
-			boxDef.userData = new ObjectData("Crate1", "Crate");
-		}else{
-			boxDef.position.Set(-11.0, 17.0);
-			boxDef.angle = -0.323;
-			boxDef.type = b2_dynamicBody;
-			boxDef.userData = new ObjectData("Crate2", "Crate");
-		}
-		
-		b2Body* box = _world->CreateBody(&boxDef);
-		
-		b2PolygonShape boxShape;
-		boxShape.SetAsBox(2.0, 2.0);
-		
-		b2FixtureDef boxFix;
-		boxFix.density = 100;
-		boxFix.friction = 0.1;
-		boxFix.shape = &boxShape;
-
-		box->CreateFixture(&boxFix);
 	}
 }
 
@@ -145,7 +91,7 @@ int main() {
 	}
 	
 	//Init Section
-	init();
+	_world = readMap("/home/centos/Maps/DefaultMap.txt");
 	sendInitialState();
 
 	//Play Section

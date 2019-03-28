@@ -20,7 +20,7 @@ using namespace nlohmann;
 
 b2World* _world;
 
-float32 _timeStep = 1.0f / 24.0f;
+float32 _timeStep = 1.0f / 50.0f;
 int32 _velocityIterations = 6;
 int32 _positionIterations = 2;
 
@@ -53,15 +53,15 @@ void init(){
 		if(i == 0){
 			groundDef.position.Set(-8.0, 8.0);
 			groundDef.angle = -0.349;
-			groundDef.userData = new ObjectData("Ground 1", "Ground");
+			groundDef.userData = new ObjectData("Ground1", "Ground");
 		}else if (i == 1){
 			groundDef.position.Set(11.0, -3.4);
 			groundDef.angle = 0.2617;
-			groundDef.userData = new ObjectData("Ground 2", "Ground");
+			groundDef.userData = new ObjectData("Ground2", "Ground");
 		}else{
 			groundDef.position.Set(-10.0, -10.0);
 			groundDef.angle = 0;
-			groundDef.userData = new ObjectData("Ground 3", "Ground");
+			groundDef.userData = new ObjectData("Ground3", "Ground");
 		}
 
 		b2Body* ground = _world->CreateBody(&groundDef);

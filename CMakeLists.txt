@@ -11,7 +11,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set (Match_VERSION_MAJOR 0)
 set (Match_VERSION_MINOR 1)
-  
-add_executable(Match main.cpp Utils/AtomicQueue.h)
+
+file(GLOB Network Network/*.h)  
+
+add_executable(Match main.cpp Utils/AtomicQueue.h Network)
 
 target_link_libraries (Match Box2D Threads::Threads nlohmann_json::nlohmann_json)   

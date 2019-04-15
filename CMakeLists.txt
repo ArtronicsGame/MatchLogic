@@ -13,7 +13,8 @@ set (Match_VERSION_MAJOR 0)
 set (Match_VERSION_MINOR 1)
 
 file(GLOB Network Network/*.h)  
+file(GLOB Utils Utils/*.h)
 
-add_executable(Match main.cpp Utils/AtomicQueue.h Network)
+add_executable(Match main.cpp Utils Network)
 
 target_link_libraries (Match Box2D Threads::Threads nlohmann_json::nlohmann_json)   

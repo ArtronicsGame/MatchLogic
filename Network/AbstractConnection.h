@@ -10,8 +10,10 @@
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <sys/time.h> 
+#include "../Utils/UDPPacket.h"
+#include "../Utils/Coding.h"
 
-#define PORT 44282
+#define PORT 0
 #define BUF_SIZE 1024
 
 using namespace std;
@@ -28,7 +30,7 @@ class AbstractConnection{
         virtual void OnConnect(string ip, int port, int sock){}
         virtual void OnDisconnect(string ip, int port, int sock){}
         virtual void OnTCPMessage(string msg, string ip, int port, int sock){}
-        virtual void OnUDPMessage(string msg, string ip, int port, sockaddr* addr){}
+        virtual void OnUDPMessage(UDPPacket msg, string ip, int port, sockaddr* addr, int len){}
 
         AbstractConnection(){
 
@@ -97,6 +99,7 @@ class AbstractConnection{
                 
             cout << "Initilized Successfully" << endl; 
             reading = true;
+            cerr << ntohs(address.sin_port) << endl;
         }
 
         void readSync(){
@@ -134,8 +137,8 @@ class AbstractConnection{
                     sockaddr_in clientAdd;
                     int len = sizeof(struct sockaddr_in), msg_len;
                     msg_len = recvfrom(udp, buffer, BUF_SIZE, MSG_WAITALL, (struct sockaddr*) &clientAdd, (socklen_t *) &len);
-                    string message(buffer, msg_len);
-                    OnUDPMessage(message, inet_ntoa(clientAdd.sin_addr), ntohs(clientAdd.sin_port), (struct sockaddr*) &clientAdd);
+                    UDPPacket packet = decode(buffer, msg_len);
+                    OnUDPMessage(packet, inet_ntoa(clientAdd.sin_addr), ntohs(clientAdd.sin_port), (struct sockaddr*) &clientAdd, len);
                 }
 
                 for(int i = 0; i < clients.size(); i++){
@@ -194,8 +197,14 @@ class AbstractConnection{
                 sendTCP(sock, msg);
         }
 
-        void sendUDP(sockaddr* addr, char* buf, int len){
-            sendto(udp, buf, len, 0, addr, sizeof(addr));
+        void sendUDP(sockaddr* addr, int len, char* buf, int m_len){
+            sendto(udp, buf, m_len, 0, addr, len);
+        }
+
+        void sendUDPPacket(sockaddr* addr, int len, UDPPacket packet){
+            char buf[1024];
+            int m_len = encode(packet, buf);
+            sendUDP(addr, len, buf, m_len);
         }
 
 };

@@ -50,13 +50,13 @@ b2World* getMap(Maps map){
                     (std::istreambuf_iterator<char>()    ) );
 
     json jMap = json::parse(content);
-    json polygonBodies = jMap["PolygonBodies"];
+    json bodies = jMap["Bodies"];
 
     b2Vec2 gravity(jMap["Gravity"]["X"], jMap["Gravity"]["Y"]);
     
     b2World* world = new b2World(gravity);
 
-    for (json::iterator it = polygonBodies.begin(); it != polygonBodies.end(); ++it) {
+    for (json::iterator it = bodies.begin(); it != bodies.end(); ++it) {
         json jBody = *it;
         b2BodyDef bodyDef;
         bodyDef.position.Set(jBody["Position"]["X"], jBody["Position"]["Y"]);
@@ -65,24 +65,71 @@ b2World* getMap(Maps map){
         bodyDef.userData = new ObjectData(jBody["Name"], jBody["Type"]);
         b2Body* body = world->CreateBody(&bodyDef);
 
-        json jNodes = jBody["Nodes"];
-        int count = jNodes.size();
-        b2Vec2 vertics[count];
+        json polygons = jBody["Polygons"];
+        json circles = jBody["Circles"];
+        json chains = jBody["Chains"];
 
-        int i = 0;
-        for (json::iterator nit = jNodes.begin(); nit != jNodes.end(); ++nit) {
-            json jNode = *nit;
-            vertics[i++].Set(jNode["X"], jNode["Y"]);
+        //Iterate Polygons
+        for(json::iterator sit = polygons.begin(); sit != polygons.end(); ++sit){
+            json jShape = *sit;
+            json jNodes = jShape["Nodes"];
+            int count = jNodes.size();
+            b2Vec2 vertics[count];
+
+            int i = 0;
+            for (json::iterator nit = jNodes.begin(); nit != jNodes.end(); ++nit) {
+                json jNode = *nit;
+                vertics[i++].Set(jNode["X"], jNode["Y"]);
+            }
+            b2PolygonShape shape;
+            shape.Set(vertics, count);
+
+            b2FixtureDef fixDef;
+            fixDef.density = 100;
+            fixDef.friction = 0.1;
+            fixDef.shape = &shape;
+
+            body->CreateFixture(&fixDef);
         }
-        b2PolygonShape shape;
-        shape.Set(vertics, count);
 
-        b2FixtureDef fixDef;
-        fixDef.density = 100;
-        fixDef.friction = 0.1;
-        fixDef.shape = &shape;
+        //Iterate Circles
+        for(json::iterator sit = circles.begin(); sit != circles.end(); ++sit){
+            json jShape = *sit;
+            
+            b2CircleShape shape;
+            shape.m_p.Set(jShape["Position"]["X"], jShape["Position"]["Y"]);
+            shape.m_radius = jShape["Radius"];
 
-        body->CreateFixture(&fixDef);
+            b2FixtureDef fixDef;
+            fixDef.density = 100;
+            fixDef.friction = 0.1;
+            fixDef.shape = &shape;
+
+            body->CreateFixture(&fixDef);
+        }
+
+        // //Iterate Chains
+        for(json::iterator sit = chains.begin(); sit != chains.end(); ++sit){
+            json jShape = *sit;
+            json jNodes = jShape["Nodes"];
+            int count = jNodes.size();
+            b2Vec2 vertics[count];
+
+            int i = 0;
+            for (json::iterator nit = jNodes.begin(); nit != jNodes.end(); ++nit) {
+                json jNode = *nit;
+                vertics[i++].Set(jNode["X"], jNode["Y"]);
+            }
+            b2ChainShape shape;
+            shape.CreateChain(vertics, count);
+
+            b2FixtureDef fixDef;
+            fixDef.density = 100;
+            fixDef.friction = 0.1;
+            fixDef.shape = &shape;
+
+            body->CreateFixture(&fixDef);
+        }
     }
 
     return world;
@@ -104,24 +151,71 @@ b2Body* getHero(Heroes hero, b2World *world){
     bodyDef.userData = new ObjectData("Hero " + to_string(++co), jBody["Type"]);
     b2Body* body = world->CreateBody(&bodyDef);
 
-    json jNodes = jBody["Nodes"];
-    int count = jNodes.size();
-    b2Vec2 vertics[count];
+    json polygons = jBody["Polygons"];
+    json circles = jBody["Circles"];
+    json chains = jBody["Chains"];
 
-    int i = 0;
-    for (json::iterator nit = jNodes.begin(); nit != jNodes.end(); ++nit) {
-        json jNode = *nit;
-        vertics[i++].Set(jNode["X"], jNode["Y"]);
+    //Iterate Polygons
+    for(json::iterator sit = polygons.begin(); sit != polygons.end(); ++sit){
+        json jShape = *sit;
+        json jNodes = jShape["Nodes"];
+        int count = jNodes.size();
+        b2Vec2 vertics[count];
+
+        int i = 0;
+        for (json::iterator nit = jNodes.begin(); nit != jNodes.end(); ++nit) {
+            json jNode = *nit;
+            vertics[i++].Set(jNode["X"], jNode["Y"]);
+        }
+        b2PolygonShape shape;
+        shape.Set(vertics, count);
+
+        b2FixtureDef fixDef;
+        fixDef.density = 100;
+        fixDef.friction = 0.1;
+        fixDef.shape = &shape;
+
+        body->CreateFixture(&fixDef);
     }
-    b2PolygonShape shape;
-    shape.Set(vertics, count);
 
-    b2FixtureDef fixDef;
-    fixDef.density = 100;
-    fixDef.friction = 0.1;
-    fixDef.shape = &shape;
+    //Iterate Circles
+    for(json::iterator sit = circles.begin(); sit != circles.end(); ++sit){
+        json jShape = *sit;
+        
+        b2CircleShape shape;
+        shape.m_p.Set(jShape["Position"]["X"], jShape["Position"]["Y"]);
+        shape.m_radius = jShape["Radius"];
 
-    body->CreateFixture(&fixDef);
+        b2FixtureDef fixDef;
+        fixDef.density = 100;
+        fixDef.friction = 0.1;
+        fixDef.shape = &shape;
+
+        body->CreateFixture(&fixDef);
+    }
+
+    // //Iterate Chains
+    for(json::iterator sit = chains.begin(); sit != chains.end(); ++sit){
+        json jShape = *sit;
+        json jNodes = jShape["Nodes"];
+        int count = jNodes.size();
+        b2Vec2 vertics[count];
+
+        int i = 0;
+        for (json::iterator nit = jNodes.begin(); nit != jNodes.end(); ++nit) {
+            json jNode = *nit;
+            vertics[i++].Set(jNode["X"], jNode["Y"]);
+        }
+        b2ChainShape shape;
+        shape.CreateChain(vertics, count);
+
+        b2FixtureDef fixDef;
+        fixDef.density = 100;
+        fixDef.friction = 0.1;
+        fixDef.shape = &shape;
+
+        body->CreateFixture(&fixDef);
+    }
 
     return body;
 }

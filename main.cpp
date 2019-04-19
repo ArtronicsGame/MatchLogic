@@ -25,7 +25,7 @@ class Match : public MiddleConnection {
 		int32 _velocityIterations = 6;
 		int32 _positionIterations = 2;
 
-		int _gamePeriod = 0.5 * 60 * 60; // Min * Sec/Min * FPS
+		int _gamePeriod = 1 * 60 * 60; // Min * Sec/Min * FPS
 
 		AtomicQueue<json> events;
 
@@ -87,6 +87,12 @@ class Match : public MiddleConnection {
 		}
 
 		void EndMatch(){
+			json resp;
+			resp["_type"] = "MatchEnd";
+			resp["_info"]["stuff"] = 2;
+			stringstream ss;
+			ss << resp << endl;
+			broadcastTCP(ss.str());
 			closeAll();
 		}
 

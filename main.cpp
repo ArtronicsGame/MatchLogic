@@ -10,22 +10,22 @@
 #include "Utils/MapReader.h"
 #include "Network/MiddleConnection.h"
 #include "Utils/ToJson.h"
+#include "Model/PlayerData.h"
 
 using namespace std;
 using namespace chrono;
 using namespace nlohmann;
 
-class Match : public MiddleConnection {
+class Match : public MiddleConnection, public b2ContactListener {
     private:
-		const int MATCH_SIZE = 1;
+		const float32 _timeStep = 1.0f / 50.0f;
+		const int32 _velocityIterations = 6;
+		const int32 _positionIterations = 2;
 
 		b2World* _world;
 
-		float32 _timeStep = 1.0f / 50.0f;
-		int32 _velocityIterations = 6;
-		int32 _positionIterations = 2;
-
-		int _gamePeriod = 1 * 60 * 60; // Min * Sec/Min * FPS
+		bool _notEnded = true;
+		int _gamePeriod = 0.1 * 60 * 50; // Min * Sec/Min * FPS
 
 		AtomicQueue<json> events;
 
@@ -35,6 +35,57 @@ class Match : public MiddleConnection {
 		thread* logic;
 
     public:
+		template <typename Of, typename What>
+		inline bool instanceof(What *w)
+		{
+			return dynamic_cast<Of*>(w) != 0;
+		}
+
+		void BeginContact(b2Contact* contact)
+		{
+			void* userDataA = contact->GetFixtureA()->GetBody()->GetUserData();
+			void* userDataB = contact->GetFixtureB()->GetBody()->GetUserData();			
+			ObjectData *dataA = (ObjectData *) userDataA;
+			ObjectData *dataB = (ObjectData *) userDataB;
+			bool bullet = false;
+
+			if(dataA->type == "Bullet"){
+				dataA->type = "Del";
+				bullet = true;
+			}else if(dataB->type == "Bullet"){
+				dataB->type = "Del";
+				bullet = true;
+			}
+			
+			if(instanceof<PlayerInfo>(dataA) && bullet) {
+				PlayerInfo* i = (PlayerInfo*) dataA;
+				i->health--;
+				if(i->health == 0){
+					EndMatch();
+					return;
+				}
+				json message;
+				stringstream ss;
+				message["_type"] = "Damage";
+				message["_info"]["heroID"] = i->id;
+				ss << message << endl;
+				broadcastTCP(ss.str());
+			}else if(instanceof<PlayerInfo>(dataB) && bullet) {
+				PlayerInfo* i = (PlayerInfo*) dataB;
+				i->health--;
+				if(i->health == 0){
+					EndMatch();
+					return;
+				}
+				stringstream ss;
+				json message;
+				message["_type"] = "Damage";
+				message["_info"]["heroID"] = i->id;
+				ss << message << endl;
+				broadcastTCP(ss.str());
+			}
+		}
+
         Match() {
 			map<int, string> realID;
 			map<string, int> fakeID;
@@ -57,6 +108,7 @@ class Match : public MiddleConnection {
 			string mapType;
 			cin >> mapType;
 			_world = getMap(getMapEnum(mapType));
+			_world->SetContactListener(this);
 
             createServer();
             readSync();
@@ -79,14 +131,76 @@ class Match : public MiddleConnection {
 				json response;
 				response["_type"] = "HeroID";
 				response["_info"]["HeroID"] = ((ObjectData*)hero->GetUserData())->id;
-
 				sendMessage(response, it->first);
 			}
 			broadcastTCP(getWorldJSON());
 			logic = new thread(&Match::run, this);
 		}
 
+		void result(){
+			vector<pair<int, int>> scores;
+			for (map<int,b2Body*>::iterator it = heroes.begin(); it!=heroes.end(); ++it)
+			{
+				PlayerInfo* i = (PlayerInfo*) it->second->GetUserData();
+				scores.push_back(make_pair(i->health, it->first));
+			}
+
+			sort(scores.begin(), scores.end());
+			reverse(scores.begin(), scores.end());
+
+			vector<string> win, lose;
+			for(int i = 0; i < scores.size(); i++){
+				json message;
+				message["_type"] = "Result";
+				if(i < ceil(scores.size()/2.0)){
+					win.push_back(realID[scores[i].second]);
+					message["_info"]["State"] = "W";
+				}else{
+					//Lose
+					lose.push_back(realID[scores[i].second]);
+					message["_info"]["State"] = "L";
+				}
+				sendMessage(message, scores[i].second);
+			}
+
+			stringstream ss;
+			json message;
+			message["_type"] = "Result";
+			message["_info"]["Winners"] = win;
+			message["_info"]["Losers"] = lose;
+			ss << message << endl;
+
+			int sock = 0, valread; 
+			struct sockaddr_in serv_addr; 
+			char buffer[1024] = {0}; 
+			sock = socket(AF_INET, SOCK_STREAM, 0);
+			memset(&serv_addr, '0', sizeof(serv_addr)); 
+		
+			serv_addr.sin_family = AF_INET; 
+			serv_addr.sin_port = htons(1111); 
+			
+			// Convert IPv4 and IPv6 addresses from text to binary form 
+			inet_pton(AF_INET, "5.253.27.99", &serv_addr.sin_addr);
+		
+			if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0) 
+			{
+				cout << "Connected" << endl;
+				send(sock , ss.str().c_str(), ss.str().length(), 0 ); 
+				// valread = read( sock , buffer, 1024); 
+				// string ans(buffer);
+				// if(string("OK").find("OK") > -1)
+				// 	FinalEnd();
+			}  
+			FinalEnd();
+			
+		}
+
 		void EndMatch(){
+			_notEnded = false;
+			result();
+		}
+
+		void FinalEnd(){
 			json resp;
 			resp["_type"] = "MatchEnd";
 			resp["_info"]["stuff"] = 2;
@@ -94,6 +208,7 @@ class Match : public MiddleConnection {
 			ss << resp << endl;
 			broadcastTCP(ss.str());
 			closeAll();
+			delete _world;
 		}
 
 		//Game Section
@@ -103,15 +218,19 @@ class Match : public MiddleConnection {
 			stringstream ss;
 			b2Body* it = _world->GetBodyList();
 			while(it != nullptr){
-				json message;
-				ObjectData *temp = (ObjectData *)it->GetUserData();
-				message["_type"] = "NewItem";
-				message["_info"]["objName"] = temp->shapeName;
-				message["_info"]["elemName"] = temp->id;
-				message["_info"]["X"] = to_string(it->GetPosition().x);
-				message["_info"]["Y"] = to_string(it->GetPosition().y);
-				message["_info"]["Angle"] = to_string(it->GetAngle());
-				ss << message << endl;
+				if(it->GetUserData() != nullptr){
+					json message;
+					ObjectData *temp = (ObjectData *)it->GetUserData();
+					if(temp->type != "Wall"){
+						message["_type"] = "NewItem";
+						message["_info"]["objName"] = temp->type;
+						message["_info"]["elemName"] = temp->id;
+						message["_info"]["X"] = to_string(it->GetPosition().x);
+						message["_info"]["Y"] = to_string(it->GetPosition().y);
+						message["_info"]["Angle"] = to_string(it->GetAngle());
+						ss << message << endl;
+					}
+				}
 				it = it->GetNext();
 			}
 			return ss.str();
@@ -123,13 +242,24 @@ class Match : public MiddleConnection {
 			bool flag = false;
 			while(it != nullptr){
 				if(it->GetType() == b2_dynamicBody){
-					UDPPacket packet;
-					packet.type = 'U';
-					packet.fList.push_back(it->GetPosition().x);
-					packet.fList.push_back(it->GetPosition().y);
-					packet.fList.push_back(it->GetAngle());
-					packet.str = ((ObjectData*)it->GetUserData())->id;
-					broadcastUDP(packet);
+					ObjectData *temp = (ObjectData *)it->GetUserData();
+					if(temp->type == "Del"){
+						_world->DestroyBody(it);
+						stringstream ss;
+						json message;
+						message["_type"] = "DelItem";
+						message["_info"]["id"] = temp->id;
+						ss << message << endl;
+						broadcastTCP(ss.str());
+					}else{
+						UDPPacket packet;
+						packet.type = 'U';
+						packet.fList.push_back(it->GetPosition().x);
+						packet.fList.push_back(it->GetPosition().y);
+						packet.fList.push_back(it->GetAngle());
+						packet.str = temp->id;
+						broadcastUDP(packet);
+					}
 				}
 				it = it->GetNext();
 			}
@@ -137,34 +267,15 @@ class Match : public MiddleConnection {
 
 		void run() {
 			this_thread::sleep_for(milliseconds(1000));
+			stringstream ss;
+			json message;
+			message["_type"] = "Start";
+			ss << message << endl;
+			broadcastTCP(ss.str());
 			cout << "GameStarted " << endl;
 			milliseconds lastTime;
-			for(int i = 0; i < _gamePeriod; i++){
-				json event;
-				while(events.pop(event)){
-					//TODO: Perform New Events
-					if(event["_type"] == "HeroMove"){
-						b2Vec2 dir;
-						float speed = event["_info"]["speed"];
-						dir.x = event["_info"]["x"];
-						dir.y = event["_info"]["y"];
-
-						int id = event["_info"]["id"];
-
-						heroes[id]->SetTransform(heroes[id]->GetPosition(), atan2f(dir.y, dir.x));
-
-						dir.x *= speed * 6;
-						dir.y *= speed * 6;
-
-						heroes[id]->SetLinearVelocity(dir);
-					}
-					else if(event["_type"] == "HeroAttack")
-					{
-						
-					}
-				}
-				
-
+			for(int i = 0; i < _gamePeriod && _notEnded; i++){
+				preprocess();
 
 				lastTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 				_world->Step(_timeStep, _velocityIterations, _positionIterations);
@@ -177,7 +288,58 @@ class Match : public MiddleConnection {
 				this_thread::sleep_for(waitTime);
 
 			}
-			EndMatch();
+			if(_notEnded)
+				EndMatch();
+		}
+
+		void preprocess(){
+			json event;
+			while(events.pop(event)){
+				//TODO: Perform New Events
+				if(event["_type"] == "HeroMove"){
+					b2Vec2 dir;
+					float speed = event["_info"]["speed"];
+					dir.x = event["_info"]["x"];
+					dir.y = event["_info"]["y"];
+
+					int id = event["_info"]["id"];
+
+					heroes[id]->SetTransform(heroes[id]->GetPosition(), atan2f(dir.y, dir.x));
+					PlayerInfo* i = (PlayerInfo*) heroes[id]->GetUserData();
+
+					dir.x *= speed * i->speed;
+					dir.y *= speed * i->speed;
+
+					heroes[id]->SetLinearVelocity(dir);
+				}
+				else if(event["_type"] == "Shoot")
+				{
+					int id = event["_info"]["id"];
+					float rotation = heroes[id]->GetAngle();
+					b2Vec2 pos = heroes[id]->GetPosition();
+					pos.x += 7 * cos(rotation);
+					pos.y += 7 * sin(rotation);
+
+					b2Body* bullet = spawn(BULLET, pos, rotation, _world);
+
+					float forceMag = 100000.0f;
+					b2Vec2 force(forceMag * cos(rotation), forceMag * sin(rotation));
+					bullet->ApplyForceToCenter(force, false);
+
+					stringstream ss;
+					json message;
+					ObjectData *temp = (ObjectData *)bullet->GetUserData();
+					message["_type"] = "NewItem";
+					message["_info"]["objName"] = temp->type;
+					message["_info"]["elemName"] = temp->id;
+					message["_info"]["X"] = to_string(pos.x);
+					message["_info"]["Y"] = to_string(pos.y);
+					message["_info"]["Angle"] = to_string(rotation);
+					ss << message << endl;
+
+					broadcastTCP(ss.str());
+				}
+			}
 		}
 };
 

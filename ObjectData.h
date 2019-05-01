@@ -8,8 +8,9 @@ using namespace std;
 class ObjectData{
     public:
         string id;
-        string shapeName;
+        string type;
 
-        ObjectData(string id, string shapeName) : id(id), shapeName(shapeName){}
+        ObjectData(string id, string type) : id(id), type(type){}
+        virtual ~ObjectData() = default;
 };
 #endif

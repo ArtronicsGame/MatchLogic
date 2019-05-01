@@ -17,7 +17,7 @@ struct UDPDest {
 };
 
 class MiddleConnection : public AbstractConnection {
-    private:
+    protected:
         const int MATCH_SIZE = 1;
         int connected = 0;
 

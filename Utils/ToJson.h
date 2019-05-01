@@ -16,9 +16,12 @@ json toJson(UDPPacket packet, int id){
         ans["_info"]["x"] = packet.fList[1];
         ans["_info"]["y"] = packet.fList[2];
         ans["_info"]["id"] = id;
-
-        return ans;
+    }else if(packet.type == 'S'){
+        ans["_type"] = "Shoot";
+        ans["_info"]["id"] = id;
     }
+
+    return ans;
 }
 
 #endif

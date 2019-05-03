@@ -24,8 +24,10 @@ class Match : public MiddleConnection, public b2ContactListener {
 
 		b2World* _world;
 
+		json _actions;
+		string _matchId = "N/A";
 		bool _notEnded = true;
-		int _gamePeriod = 0.1 * 60 * 50; // Min * Sec/Min * FPS
+		int _gamePeriod = 0.25 * 60 * 50; // Min * Sec/Min * FPS
 
 		AtomicQueue<json> events;
 
@@ -123,6 +125,8 @@ class Match : public MiddleConnection, public b2ContactListener {
 		}
 
 		void OnMatchStart(){
+			cin >> _matchId;
+			cout << "We Have Match ID: " << _matchId << endl;
 			for (map<int,Heroes>::iterator it = heroTypes.begin(); it!=heroTypes.end(); ++it)
 			{
 				b2Body* hero = getHero(it->second, _world);
@@ -163,12 +167,14 @@ class Match : public MiddleConnection, public b2ContactListener {
 				sendMessage(message, scores[i].second);
 			}
 
-			stringstream ss;
 			json message;
 			message["_type"] = "Result";
 			message["_info"]["Winners"] = win;
 			message["_info"]["Losers"] = lose;
-			ss << message << endl;
+			message["_info"]["Actions"] = json::to_bson(_actions);
+			message["_info"]["MatchID"] = _matchId;
+			vector<uint8_t> udata = json::to_bson(message);
+			char* data = (char*) &udata[0];
 
 			int sock = 0, valread; 
 			struct sockaddr_in serv_addr; 
@@ -185,7 +191,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 			if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) >= 0) 
 			{
 				cout << "Connected" << endl;
-				send(sock , ss.str().c_str(), ss.str().length(), 0 ); 
+				send(sock , data, udata.size(), 0 ); 
 				// valread = read( sock , buffer, 1024); 
 				// string ans(buffer);
 				// if(string("OK").find("OK") > -1)
@@ -274,8 +280,10 @@ class Match : public MiddleConnection, public b2ContactListener {
 			broadcastTCP(ss.str());
 			cout << "GameStarted " << endl;
 			milliseconds lastTime;
-			for(int i = 0; i < _gamePeriod && _notEnded; i++){
-				preprocess();
+
+			int i;
+			for(i = 0; i < _gamePeriod && _notEnded; i++){
+				preprocess(i);
 
 				lastTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 				_world->Step(_timeStep, _velocityIterations, _positionIterations);
@@ -288,14 +296,18 @@ class Match : public MiddleConnection, public b2ContactListener {
 				this_thread::sleep_for(waitTime);
 
 			}
+			_actions["count"] = i;
+
 			if(_notEnded)
 				EndMatch();
 		}
 
-		void preprocess(){
+		void preprocess(int fn){
 			json event;
+			vector<json> frameAction;
 			while(events.pop(event)){
-				//TODO: Perform New Events
+				frameAction.push_back(event);
+
 				if(event["_type"] == "HeroMove"){
 					b2Vec2 dir;
 					float speed = event["_info"]["speed"];
@@ -340,6 +352,8 @@ class Match : public MiddleConnection, public b2ContactListener {
 					broadcastTCP(ss.str());
 				}
 			}
+
+			_actions["F" + to_string(fn)] = frameAction;
 		}
 };
 

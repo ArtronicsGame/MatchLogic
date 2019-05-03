@@ -27,6 +27,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 		json _actions;
 		string _matchId = "N/A";
 		bool _notEnded = true;
+		vector<json> _frameAction;
 		int _gamePeriod = 0.25 * 60 * 50; // Min * Sec/Min * FPS
 
 		AtomicQueue<json> events;
@@ -70,6 +71,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 				stringstream ss;
 				message["_type"] = "Damage";
 				message["_info"]["heroID"] = i->id;
+				_frameAction.push_back(message);
 				ss << message << endl;
 				broadcastTCP(ss.str());
 			}else if(instanceof<PlayerInfo>(dataB) && bullet) {
@@ -83,6 +85,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 				json message;
 				message["_type"] = "Damage";
 				message["_info"]["heroID"] = i->id;
+				_frameAction.push_back(message);
 				ss << message << endl;
 				broadcastTCP(ss.str());
 			}
@@ -137,6 +140,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 				response["_info"]["HeroID"] = ((ObjectData*)hero->GetUserData())->id;
 				sendMessage(response, it->first);
 			}
+
 			broadcastTCP(getWorldJSON());
 			logic = new thread(&Match::run, this);
 		}
@@ -223,6 +227,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 		string getWorldJSON(){
 			stringstream ss;
 			b2Body* it = _world->GetBodyList();
+			vector<json> items;
 			while(it != nullptr){
 				if(it->GetUserData() != nullptr){
 					json message;
@@ -234,11 +239,13 @@ class Match : public MiddleConnection, public b2ContactListener {
 						message["_info"]["X"] = to_string(it->GetPosition().x);
 						message["_info"]["Y"] = to_string(it->GetPosition().y);
 						message["_info"]["Angle"] = to_string(it->GetAngle());
+						items.push_back(message);
 						ss << message << endl;
 					}
 				}
 				it = it->GetNext();
 			}
+			_actions["Init"] = items;
 			return ss.str();
 		}
 
@@ -255,6 +262,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 						json message;
 						message["_type"] = "DelItem";
 						message["_info"]["id"] = temp->id;
+						_frameAction.push_back(message);
 						ss << message << endl;
 						broadcastTCP(ss.str());
 					}else{
@@ -264,6 +272,15 @@ class Match : public MiddleConnection, public b2ContactListener {
 						packet.fList.push_back(it->GetPosition().y);
 						packet.fList.push_back(it->GetAngle());
 						packet.str = temp->id;
+
+						json message;
+						message["_type"] = "UpdatePos";
+						message["_info"]["id"] = temp->id; 
+						message["_info"]["X"] = it->GetPosition().x;
+						message["_info"]["Y"] = it->GetPosition().y;
+						message["_info"]["Rot"] = it->GetAngle();
+						_frameAction.push_back(message);
+						
 						broadcastUDP(packet);
 					}
 				}
@@ -283,7 +300,8 @@ class Match : public MiddleConnection, public b2ContactListener {
 
 			int i;
 			for(i = 0; i < _gamePeriod && _notEnded; i++){
-				preprocess(i);
+				_frameAction.clear();
+				preprocess();
 
 				lastTime = duration_cast<milliseconds>(system_clock::now().time_since_epoch());
 				_world->Step(_timeStep, _velocityIterations, _positionIterations);
@@ -294,7 +312,7 @@ class Match : public MiddleConnection, public b2ContactListener {
 				milliseconds waitTime = milliseconds((int)(_timeStep * 1000)) - (now - lastTime);
 
 				this_thread::sleep_for(waitTime);
-
+				_actions["F" + to_string(i)] = _frameAction;
 			}
 			_actions["count"] = i;
 
@@ -302,12 +320,9 @@ class Match : public MiddleConnection, public b2ContactListener {
 				EndMatch();
 		}
 
-		void preprocess(int fn){
+		void preprocess(){
 			json event;
-			vector<json> frameAction;
 			while(events.pop(event)){
-				frameAction.push_back(event);
-
 				if(event["_type"] == "HeroMove"){
 					b2Vec2 dir;
 					float speed = event["_info"]["speed"];
@@ -347,13 +362,12 @@ class Match : public MiddleConnection, public b2ContactListener {
 					message["_info"]["X"] = to_string(pos.x);
 					message["_info"]["Y"] = to_string(pos.y);
 					message["_info"]["Angle"] = to_string(rotation);
+					_frameAction.push_back(message);
 					ss << message << endl;
 
 					broadcastTCP(ss.str());
 				}
 			}
-
-			_actions["F" + to_string(fn)] = frameAction;
 		}
 };
 

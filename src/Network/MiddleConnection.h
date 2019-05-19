@@ -1,7 +1,7 @@
 #ifndef _MIDDLE_CONNECTION
 #define _MIDDLE_CONNECTION
 
-#include "AbstractConnection.h"
+#include <AbstractConnection.h>
 #include <nlohmann/json.hpp>
 
 using namespace nlohmann;

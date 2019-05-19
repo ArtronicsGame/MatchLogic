@@ -10,13 +10,15 @@
 #include <sys/socket.h> 
 #include <netinet/in.h> 
 #include <sys/time.h> 
-#include "../Utils/UDPPacket.h"
-#include "../Utils/Coding.h"
+#include <UDPPacket.h>
+#include <Coding.h>
+#include <nlohmann/json.hpp>
 
 #define PORT 0
 #define BUF_SIZE 1024
 
 using namespace std;
+using namespace nlohmann;
 
 class AbstractConnection{
     protected:
@@ -195,6 +197,13 @@ class AbstractConnection{
         void broadcastTCP(string msg){
             for(int sock: clients)
                 sendTCP(sock, msg);
+        }
+
+        void broadcastTCP(json msg){
+            stringstream ss;
+            ss << msg << endl;
+            for(int sock: clients)
+                sendTCP(sock, ss.str());
         }
 
         void sendUDP(sockaddr* addr, int len, char* buf, int m_len){

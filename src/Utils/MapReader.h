@@ -4,14 +4,14 @@
 #include <Box2D.h>
 #include <bits/stdc++.h>
 #include <nlohmann/json.hpp>
-#include "../ObjectData.h"
-#include "../Model/PlayerData.h"
+#include <ObjectData.h>
+#include <PlayerData.h>
 
 using namespace std;
 using namespace nlohmann;
 
 static int co = 0;
-json spawnPlaces;
+nlohmann::json spawnPlaces;
 
 string _heroAdd[] = {
     "/home/centos/Maps/Wizard.json",
@@ -342,20 +342,18 @@ b2Body* spawn(Items item, b2Vec2 pos, float rotation, b2World* world){
 
 Heroes getHeroEnum(string name)
 {
-    if(name == "Wizard"){
+    if(name == "Wizard")
         return WIZARD;
-    }else if(name == "Tank"){
+    else if(name == "Tank")
         return TANK;
-    }
 
     return UNKNOWN_HERO;
 }
 
 Maps getMapEnum(string name)
 {
-    if(name == "Default"){
+    if(name == "Default")
         return DEFAULT;
-    }
 
     return UNKNOWN_MAP;
 }

@@ -3,7 +3,7 @@
 
 #include <bits/stdc++.h>
 #include <Box2D.h>
-#include <ObjectData.h>
+#include <ObjectData.hpp>
 
 using namespace std;
 

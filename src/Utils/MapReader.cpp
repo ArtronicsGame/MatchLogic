@@ -1,11 +1,4 @@
-#ifndef _MAP_READER
-#define _MAP_READER
-
-#include <Box2D.h>
-#include <bits/stdc++.h>
-#include <nlohmann/json.hpp>
-#include <ObjectData.h>
-#include <PlayerData.h>
+#include <MapReader.hpp>
 
 using namespace std;
 using namespace nlohmann;
@@ -24,22 +17,6 @@ string _mapAdd[] = {
 
 string _itemAdd[] = {
     "/home/centos/Maps/Bullet.json"
-};
-
-enum Items{
-    BULLET = 0,
-    UNKNOWN_ITEM = -1
-};
-
-enum Maps{
-    DEFAULT = 0, 
-    UNKNOWN_MAP = -1
-};
-
-enum Heroes{
-    TANK = 1,
-    WIZARD = 0, 
-    UNKNOWN_HERO = -1
 };
 
 const vector<string> explode(const string& s, const char& c)
@@ -357,5 +334,3 @@ Maps getMapEnum(string name)
 
     return UNKNOWN_MAP;
 }
-
-#endif

@@ -1,17 +1,9 @@
-#ifndef _CODING_H
-#define _CODING_H
-
-#include <bits/stdc++.h>
-#include <iostream>
-#include <UDPPacket.h>
+#include <Coding.hpp>
 
 using namespace std;
 
 #define ISIZE sizeof (int)
 #define FSIZE sizeof (float)
-
-int encode(unsigned char type, vector<int> ia, vector<float> fa, string s, char *out);
-UDPPacket decode(char* sdata, int length);
 
 int encode(UDPPacket packet, char *data) {
     int ia_size = packet.iList.size();
@@ -78,5 +70,3 @@ UDPPacket decode(char* sdata, int length) {
 
     return ans;
 }
-
-#endif

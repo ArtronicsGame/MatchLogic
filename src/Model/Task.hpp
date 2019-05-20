@@ -12,13 +12,8 @@ class Task {
     public:
         Task(int remTime, int type, b2Body* bodyRef) : remTime(remTime), type(type), bodyRef(bodyRef) {}
 
-        int Tick() {
-            return --remTime;
-        }
-
-        bool operator<(const Task& task) const {
-            return remTime < task.remTime;
-        }
+        int Tick();
+        bool operator<(const Task& task) const;
 };
 
 #endif

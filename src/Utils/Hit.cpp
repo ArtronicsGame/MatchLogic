@@ -1,10 +1,9 @@
-#ifndef _HIT_H
-#define _HIT_H
+#include <Hit.hpp>
 
 #include <bits/stdc++.h>
-#include <Box2D.h>
-#include <ObjectData.h>
+#include <ObjectData.hpp>
 #include <nlohmann/json.hpp>
+#include <PlayerData.hpp>
 
 using namespace std;
 using namespace nlohmann;
@@ -31,5 +30,3 @@ tuple<bool, json> onBullet(ObjectData* bullet, ObjectData* other){
 
     return {false, nullptr};
 }
-
-#endif

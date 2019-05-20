@@ -1,4 +1,4 @@
-#include <Match.h>
+#include <Match.hpp>
 
 int main() {
 	Match match;

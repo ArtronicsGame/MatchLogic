@@ -25,6 +25,8 @@ json OnEvents::OnHeroShoot(json& event, b2Body* body, b2World* world){
 	pos.y += 7 * sin(rotation);
 
 	b2Body* bullet = spawn(BULLET, pos, rotation, world);
+	Bullet* data = (Bullet*) bullet->GetUserData();
+	data->ref = (PlayerInfo*) body->GetUserData();
 
 	b2Vec2 force(FORCE_MAG * cos(rotation), FORCE_MAG * sin(rotation));
 	bullet->ApplyForceToCenter(force, false);

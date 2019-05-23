@@ -1,16 +1,17 @@
 #ifndef _TASK_H
 #define _TASK_H
 
-#include<Box2D.h>
+#include <Box2D.h>
+#include <PlayerData.hpp>
 
 class Task {
     public:
         int remTime;
         int type;
-        b2Body* bodyRef;
+        PlayerInfo* playerRef;
 
     public:
-        Task(int remTime, int type, b2Body* bodyRef) : remTime(remTime), type(type), bodyRef(bodyRef) {}
+        Task(int remTime, int type, PlayerInfo* playerRef) : remTime(remTime), type(type), playerRef(playerRef) {}
 
         int Tick();
         bool operator<(const Task& task) const;

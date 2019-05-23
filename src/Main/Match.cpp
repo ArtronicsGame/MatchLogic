@@ -18,13 +18,15 @@ void Match::BeginContact(b2Contact* contact)
     ObjectData *dataB = (ObjectData *) userDataB;
 
     if(dataA->type == "Bullet"){
-        auto [state, message] = onBullet(dataA, dataB);
+        Bullet* bullet = (Bullet *) dataA;
+        auto [state, message] = onBullet(bullet, dataB);
         if(state){
             _frameAction.push_back(message);
             broadcastTCP(message);
         }
     }else if(dataB->type == "Bullet"){
-        auto [state, message] = onBullet(dataB, dataA);
+        Bullet* bullet = (Bullet *) dataB;
+        auto [state, message] = onBullet(bullet, dataA);
         if(state){
             _frameAction.push_back(message);
             broadcastTCP(message);

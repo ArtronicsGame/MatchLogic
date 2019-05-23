@@ -4,4 +4,5 @@
 #include <ObjectData.hpp>
 #include <MapReader.hpp>
 #include <PlayerData.hpp>
+#include <Bullet.hpp>
 #include <ToJson.hpp>

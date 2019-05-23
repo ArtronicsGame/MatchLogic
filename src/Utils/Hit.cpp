@@ -14,17 +14,18 @@ inline bool instanceof(What *w)
     return dynamic_cast<Of*>(w) != 0;
 }
 
-tuple<bool, json> onBullet(ObjectData* bullet, ObjectData* other){
+tuple<bool, json> onBullet(Bullet* bullet, ObjectData* other){
     bullet->type = "Del";
     if(instanceof<PlayerInfo>(other)) {
         PlayerInfo* i = (PlayerInfo*) other;
-        i->health--;
+        bullet->ref->onAttack(i);
         if(i->health == 0){
             //Respawn
         }
         json message;
         message["_type"] = "Damage";
         message["_info"]["heroID"] = i->id;
+        message["_info"]["health"] = i->health;
         return {true, message};
     }
 

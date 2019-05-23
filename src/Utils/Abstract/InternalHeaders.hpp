@@ -11,4 +11,5 @@
 #include <PlayerData.hpp>
 #include <Hit.hpp>
 #include <EventProcessing.hpp>
+#include <Bullet.hpp>
 #include <EventTypes.hpp>

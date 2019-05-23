@@ -6,6 +6,7 @@
 #include <nlohmann/json.hpp>
 #include <ObjectData.hpp>
 #include <PlayerData.hpp>
+#include <Bullet.hpp>
 
 using namespace std;
 using namespace nlohmann;

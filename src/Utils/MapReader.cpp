@@ -245,7 +245,7 @@ b2Body* spawn(Items item, b2Vec2 pos, float rotation, b2World* world){
     bodyDef.angle = rotation;
     bodyDef.type = b2_dynamicBody;
     bodyDef.bullet = jBody["Bullet"];
-    bodyDef.userData = new ObjectData("I" + to_string(++co), jBody["Type"]);
+    bodyDef.userData = new Bullet("I" + to_string(++co), jBody["Type"]);
     b2Body* body = world->CreateBody(&bodyDef);
 
     json polygons = jBody["Polygons"];

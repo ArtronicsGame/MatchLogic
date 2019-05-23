@@ -59,5 +59,5 @@ void result(Match* match){
         // if(string("OK").find("OK") > -1)
         // 	FinalEnd();
     }  
-    
+    match->FinalEnd();   
 }

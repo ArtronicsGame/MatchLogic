@@ -36,7 +36,7 @@ Match::Match() {
     map<int, string> realID;
     map<string, int> fakeID;
     map<int, bool> check;
-
+    cout << "Program Started" << endl;
     for(int i = 0; i < MATCH_SIZE; i++){
         string rid, heroType;
         int id;
@@ -44,6 +44,7 @@ Match::Match() {
             id = rand() % 10000;
         } while(check[id]);
         cin >> rid >> heroType;
+        cout << rid << " -> " << heroType << endl;
         realID[id] = rid;
         fakeID[rid] = id;
         heroTypes[id] = getHeroEnum(heroType);
@@ -53,8 +54,11 @@ Match::Match() {
     
     string mapType;
     cin >> mapType;
+    cout << mapType << endl;
     _world = getMap(getMapEnum(mapType));
     _world->SetContactListener(this);
+
+    cout << "Config Done" << endl;
 
     createServer();
     readSync();
@@ -88,7 +92,7 @@ void Match::OnMatchStart(){
 
 void Match::EndMatch(){
     _notEnded = false;
-    // result(this);
+    result(this);
 }
 
 void Match::FinalEnd(){

@@ -30,7 +30,7 @@ string toString(json message){
 
 json JSON::newItem(ObjectData* data, b2Vec2 pos, float32 rotation){
     json message;
-    message["_type"] = "Newbodyem";
+    message["_type"] = "NewItem";
     message["_info"]["objName"] = data->type;
     message["_info"]["elemName"] = data->id;
     message["_info"]["X"] = to_string(pos.x);
